@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="uk">
+{% load static %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Менеджер задач{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <!-- Custom CSS -->
+    <style>
+        body {
+            background-image: url("{% static 'fon.jpg' %}");
+            background-size: cover;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            background-position: center;
+            padding-top: 70px;
+        }
+
+        .navbar {
+            margin-bottom: 20px;
+        }
+
+        .floating-gif {
+            position: fixed;
+            bottom: 20px;
+            left: 250px; /* Замість right */
+            width: 100px;
+            z-index: 1000;
+            opacity: 0.8;
+        }
+
+        .floating-gif:hover {
+            transform: scale(1.2);
+            opacity: 1;
+        }
+
+        .main-content {
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 1200px;
+        }
+
+        .img-thumbnail {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .task-title {
+            word-wrap: break-word;
+            word-break: break-word;
+            white-space: normal;
+            max-width: 200px; /* Максимальна ширина стовпця */
+        }
+
+        .Task_calc {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+
+            color: #fff; /* Колір тексту */
+            border-radius: 8px; /* Закруглення країв */
+            padding: 10px 15px; /* Відступи всередині блоку */
+            margin-top: 15px; /* Відступ зверху */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Тінь */
+            font-size: 1rem; /* Розмір тексту */
+            font-weight: bold; /* Жирний текст */
+            gap: 10px; /* Проміжок між елементами */
+        }
+
+        .Task_calc .badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 6px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .Task_calc .badge-warning {
+            background-color: #ffc107; /* Жовтий */
+            color: #212529; /* Темний текст */
+        }
+
+        .Task_calc .badge-secondary {
+            background-color: #6c757d; /* Сірий */
+            color: #fff; /* Білий текст */
+        }
+
+        table {
+            table-layout: fixed; /* Встановлює фіксовану ширину таблиці */
+            width: 100%; /* Займає всю доступну ширину */
+        }
+
+        td, th {
+            word-wrap: break-word; /* Перенос слів */
+            word-break: break-word; /* Перенос довгих слів */
+            white-space: normal; /* Дозволяє тексту переноситись */
+            max-width: 150px; /* Опціонально: встановити максимальну ширину стовпця */
+        }
+
+        .table-danger {
+            background-color: #f8d7da !important; /* Світло-червоний фон */
+            color: #721c24; /* Темний текст для контрасту */
+        }
+
+        /* Для нетермінових задач */
+        .table-warning {
+            background-color: #fff3cd !important; /* Світло-жовтий фон */
+            color: #856404; /* Темний текст для контрасту */
+        }
+    </style>
+</head>
+<body>
+<!-- Навігація -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'task_list' %}">Менеджер задач</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'task_form' %}">Створити задачу</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'reports' %}">Звіти</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'instructions' %}">Інструкція</a>
+                    </li>
+                {% endif %}
+            </ul>
+            <ul class="navbar-nav">
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-link nav-link text-danger"
+                                    style="border: none; background: none;">
+                                Вийти
+                            </button>
+                        </form>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">Увійти</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Основний контент -->
+<div class="container">
+    <div class="row">
+        <div class="col-12 main-content">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<img src="https://img1.picmix.com/output/stamp/thumb/1/5/6/8/1988651_efba2.gif"
+     alt="Dog GIF"
+     class="floating-gif">
+
+{% block scripts %}
+{% endblock %}
+</body>
+</html>

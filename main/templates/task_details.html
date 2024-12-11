@@ -1,0 +1,504 @@
+{% extends "base.html" %}
+
+{% block title %}Деталі задачі{% endblock %}
+
+{% block content %}
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>{{ task.title }}</h1>
+            <div class="d-flex">
+                <a href="{% url 'task_list' %}" class="btn btn-secondary me-2">
+                    <i class="fas fa-arrow-left"></i> Назад до списку
+                </a>
+                <button id="changeStatusBtn" class="btn btn-warning" data-bs-toggle="modal"
+                        data-bs-target="#statusModal">
+                    <i class="fas fa-edit"></i> Змінити статус
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4 shadow">
+        <div class="card-body">
+            <!-- Основна інформація -->
+            <div class="row mb-4">
+                <!-- Блок 1: Основні дати -->
+                <div class="col-md-6">
+                    <h5><i class="fas fa-info-circle text-primary"></i> Основна інформація:</h5>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong># Номер задачі:</strong> {{ task.task_number }}</li>
+                        <li class="list-group-item">
+                            <strong><i class="fas fa-tasks text-primary"></i> Статус:</strong>
+                            {% if task.status == 'not_started' %}
+                                <span class="badge bg-secondary">Не розпочато</span>
+                            {% elif task.status == 'in_progress' %}
+                                <span class="badge bg-warning text-dark">Виконується</span>
+                            {% elif task.status == 'completed' %}
+                                <span class="badge bg-success">Завершено</span>
+                            {% endif %}
+                        </li>
+                        <li class="list-group-item"><strong><i class="fas fa-calendar-plus text-primary"></i> Дата
+                            створення:</strong> {{ task.created_at|date:"d.m.Y H:i" }}</li>
+                        <li class="list-group-item"><strong><i class="fas fa-calendar text-warning"></i> Дата дедлайну:</strong> {{ task.deadline|date:"d.m.Y H:i" }}
+                            {% if task.assigned_by == request.user %}
+                                <!-- Кнопка історії дедлайнів -->
+                                <i class="fas fa-history text-info cursor-pointer ms-2" data-bs-toggle="modal"
+                                   data-bs-target="#deadlineHistoryModal" title="Історія дедлайнів"></i>
+
+                                <!-- Кнопка зміни дедлайну -->
+                                <i class="fas fa-edit text-warning cursor-pointer ms-2" data-bs-toggle="modal"
+                                   data-bs-target="#changeDeadlineModal" title="Змінити дедлайн"></i>
+                            {% endif %}
+
+                        </li>
+                        <li class="list-group-item">
+                            <strong><i class="fas fa-info-circle text-primary"></i> Опис задачі:</strong>
+                            {{ task.description }}
+                        </li>
+
+                    </ul>
+                </div>
+
+                <!-- Блок 2: Хід виконання -->
+                <div class="col-md-6">
+                    <h5><i class="fas fa-hourglass-half text-info"></i> Хід виконання:</h5>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong><i class="fas fa-calendar-check text-success"></i> Дата
+                            виконання:</strong> {{ task.started_at|date:"d.m.Y H:i"|default:"—" }}</li>
+                        <li class="list-group-item"><strong><i class="fas fa-calendar-times text-danger"></i> Дата
+                            завершення:</strong> {{ task.finished_at|date:"d.m.Y H:i"|default:"—" }}</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Відповідальні виконавці -->
+            <div class="card mt-4 shadow" style="background-color: #f9f9f9; border: 1px solid #ddd;">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-user-tie"></i> Відповідальні виконавці</h5>
+                    <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addPerformerModal">
+                        <i class="fas fa-user-plus"></i> Додати відповідальних
+                    </button>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% for performer in task.performers.all %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ performer.performer.get_full_name }}</strong> -
+                                    {% if performer.status == 'not_started' %}
+                                        <span class="badge bg-secondary">Не розпочато</span>
+                                    {% elif performer.status == 'in_progress' %}
+                                        <span class="badge bg-warning text-dark">Виконується</span>
+                                    {% elif performer.status == 'completed' %}
+                                        <span class="badge bg-success">Завершено</span>
+                                    {% endif %}
+                                </div>
+                                <div style="font-size: 0.85rem; color: #6c757d;">
+                                    <strong>Дата
+                                        виконання:</strong> {{ performer.started_at|date:"d.m.Y H:i"|default:"—" }}<br>
+                                    <strong>Дата
+                                        завершення:</strong> {{ performer.completed_at|date:"d.m.Y H:i"|default:"—" }}
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Листування -->
+            <div class="card mt-4 shadow" style="background-color: #f9f9f9; border: 1px solid #ddd;">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-comments"></i> Листування</h5>
+                </div>
+                <div id="chatBody" class="card-body" style="max-height: 300px; overflow-y: auto;">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="d-flex align-items-start mb-3 {% if forloop.counter0|divisibleby:2 %}bg-primary bg-opacity-10{% else %}bg-secondary bg-opacity-10{% endif %} p-3 rounded">
+                                <!-- Аватар -->
+                                <div class="rounded-circle bg-info text-white text-center me-3"
+                                     style="width: 40px; height: 40px; line-height: 40px;">
+                                    {{ message.author.username|slice:":1" }}
+                                </div>
+                                <!-- Тіло повідомлення -->
+                                <div>
+                                    <strong>{{ message.author.get_full_name }}</strong>
+                                    <small class="text-muted d-block">{{ message.created_at|date:"d.m.Y H:i" }}</small>
+
+                                    <!-- Текстове повідомлення -->
+                                    {% if message.content %}
+                                        <div class="mt-1 p-2 border rounded">{{ message.content }}</div>
+                                    {% endif %}
+
+                                    <!-- Перевірка та відображення прикріпленого файлу -->
+                                    {% if message.file %}
+                                        <div class="mt-1">
+                                            <div class="d-flex align-items-center">
+                                                <!-- Значок -->
+                                                <i class="fas fa-paperclip me-2 text-secondary"></i>
+
+                                                <!-- Назва файлу -->
+                                                <div>
+                                                    <strong>{{ message.file.name|cut:"chat_files/" }}</strong>
+                                                    <br>
+                                                    <!-- Посилання на завантаження -->
+                                                    <a href="{{ message.file.url }}" target="_blank"
+                                                       class="text-muted small">
+                                                        Завантажити файл
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">Поки що немає повідомлень.</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <form id="messageForm" enctype="multipart/form-data">
+                        <div class="input-group">
+                            <button id="fileInputButton" type="button" class="btn btn-secondary">
+                                <i class="fas fa-paperclip"></i> Додати файл
+                            </button>
+                            <input id="fileInput" type="file" style="display: none;">
+                            <textarea id="messageInput" class="form-control"
+                                      placeholder="Введіть текст повідомлення..."></textarea>
+                            <button id="sendMessageBtn" type="button" class="btn btn-primary">Відправити</button>
+                        </div>
+                        <div id="filePreview" class="mt-2" style="display: none;">
+                            <span id="fileName" class="badge bg-info text-white"></span>
+                            <button id="removeFileBtn" type="button" class="btn-close ms-2"
+                                    aria-label="Видалити"></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальне вікно -->
+    <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="statusModalLabel">Змінити статус</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="statusForm">
+                        <label for="statusSelect">Новий статус</label>
+                        <select id="statusSelect" class="form-select">
+                            <option value="in_progress">Виконується</option>
+                            <option value="completed">Завершено</option>
+                        </select>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрити</button>
+                    <button type="button" class="btn btn-primary" id="saveStatusBtn">Зберегти</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="deadlineHistoryModal" tabindex="-1" aria-labelledby="deadlineHistoryModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deadlineHistoryModalLabel">Історія дедлайнів</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-group">
+                        {% for history in task.deadline_histories.all %}
+                            <li class="list-group-item">
+                                <strong>{{ history.changed_at|date:"d.m.Y H:i" }}:</strong>
+                                {{ history.old_deadline|date:"d.m.Y H:i" }}
+                                → {{ history.new_deadline|date:"d.m.Y H:i" }} ({{ history.changed_by.get_full_name }})
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="changeDeadlineModal" tabindex="-1" aria-labelledby="changeDeadlineModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="changeDeadlineModalLabel">Змінити дедлайн</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="changeDeadlineForm">
+                        <label for="newDeadline">Оберіть нову дату та час дедлайну:</label>
+                        <input type="datetime-local" id="newDeadline" class="form-control">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрити</button>
+                    <button type="button" class="btn btn-primary" id="saveDeadlineBtn">Зберегти</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Модальне вікно для додавання відповідальних -->
+    <div class="modal fade" id="addPerformerModal" tabindex="-1" aria-labelledby="addPerformerModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addPerformerModalLabel">Додати відповідальних виконавців</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addPerformerForm">
+                        <label for="performerSelect">Оберіть користувачів</label>
+                        <select id="performerSelect" class="form-select" multiple>
+                            {% for user in all_users %}
+                                <option value="{{ user.id }}">{{ user.get_full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрити</button>
+                    <button type="button" class="btn btn-primary" id="addPerformerBtn">Додати</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileInputButton = document.getElementById('fileInputButton');
+        const filePreview = document.getElementById('filePreview');
+        const fileName = document.getElementById('fileName');
+        const removeFileBtn = document.getElementById('removeFileBtn');
+        const messageInput = document.getElementById('messageInput');
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+        const saveStatusBtn = document.getElementById('saveStatusBtn');
+        const statusSelect = document.getElementById('statusSelect');
+
+        let attachedFile = null;
+
+        document.getElementById('saveDeadlineBtn').addEventListener('click', function () {
+            const newDeadline = document.getElementById('newDeadline').value;
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            if (!newDeadline) {
+                alert('Введіть дату та час для нового дедлайну.');
+                return;
+            }
+
+            console.log("Відправка нового дедлайну:", newDeadline);
+
+            fetch(`/tasks/{{ task.id }}/change_deadline/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                },
+                body: JSON.stringify({deadline: newDeadline}),
+            })
+                .then(response => {
+                    console.log("Отримано відповідь:", response);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Дані з сервера:", data);
+                    if (data.success) {
+                        alert('Дедлайн успішно змінено!');
+                        location.reload();
+                    } else {
+                        alert(`Помилка: ${data.error}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Помилка:', error);
+                    alert('Щось пішло не так. Спробуйте ще раз.');
+                });
+        });
+
+
+        // Обробка вибору файлу
+        fileInput.addEventListener('change', function () {
+            if (fileInput.files.length > 0) {
+                attachedFile = fileInput.files[0];
+                fileName.textContent = attachedFile.name;
+                filePreview.style.display = 'block';
+            }
+        });
+
+        // Кнопка для відкриття файлового інпуту
+        fileInputButton.addEventListener('click', () => fileInput.click());
+
+        // Видалення прикріпленого файлу
+        removeFileBtn.addEventListener('click', () => {
+            attachedFile = null;
+            fileInput.value = '';
+            filePreview.style.display = 'none';
+        });
+
+        // Обробка вставки файлу через буфер обміну
+        messageInput.addEventListener('paste', (event) => {
+            const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+            for (const item of items) {
+                if (item.kind === 'file') {
+                    attachedFile = item.getAsFile();
+                    fileName.textContent = attachedFile.name;
+                    filePreview.style.display = 'block';
+                    break;
+                }
+            }
+        });
+
+        // Відправка повідомлення
+        sendMessageBtn.addEventListener('click', () => {
+            const messageContent = messageInput.value.trim();
+
+            if (!messageContent && !attachedFile) {
+                alert('Додайте текст повідомлення або файл.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('content', messageContent);
+            if (attachedFile) {
+                formData.append('file', attachedFile);
+            }
+
+            fetch("{% url 'task_add_message' task.id %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: formData,
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('Помилка при відправці повідомлення.');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.message) {
+                        const chatBody = document.getElementById('chatBody');
+
+                        // Додаємо нове повідомлення до чату
+                        const newMessage = `
+                        <div class="d-flex align-items-start mb-3">
+                            <div class="rounded-circle bg-info text-white text-center me-3" style="width: 40px; height: 40px; line-height: 40px;">
+                                ${data.author_initial}
+                            </div>
+                            <div>
+                                <strong>${data.author_name}</strong>
+                                <small class="text-muted d-block">${data.created_at}</small>
+                                ${data.content ? `<div class="mt-1 p-2 border rounded">${data.content}</div>` : ''}
+                                ${data.file_url ? `
+                                    <div class="mt-1">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-paperclip me-2 text-secondary"></i>
+                                            <div>
+                                                <strong class="d-block">${data.file_name}</strong>
+                                                <a href="${data.file_url}" target="_blank" class="text-muted small">Завантажити файл</a>
+                                            </div>
+                                        </div>
+                                    </div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                        chatBody.insertAdjacentHTML('beforeend', newMessage);
+
+                        // Очищення поля вводу
+                        messageInput.value = '';
+                        filePreview.style.display = 'none';
+                        attachedFile = null;
+
+                        // Прокрутка чату донизу
+                        chatBody.scrollTop = chatBody.scrollHeight;
+                    } else {
+                        alert(data.error || 'Щось пішло не так.');
+                    }
+                })
+                .catch(error => {
+                    console.error(error);
+                    alert('Щось пішло не так. Спробуйте ще раз.');
+                });
+        });
+
+        // Збереження статусу через модальне вікно
+        document.getElementById('saveStatusBtn').addEventListener('click', () => {
+            const selectedStatus = statusSelect.value;
+
+            fetch("{% url 'update_performer_status' task.id %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify({status: selectedStatus}),
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('Помилка під час оновлення статусу.');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error); // Показуємо помилку користувачеві
+                    } else {
+                        alert('Статус успішно змінено!');
+                        location.reload(); // Оновлюємо сторінку
+                    }
+                })
+                .catch(error => {
+                    console.error(error);
+                    alert('Щось пішло не так. Спробуйте ще раз.');
+                });
+        });
+
+
+        document.getElementById('addPerformerBtn').addEventListener('click', function () {
+            const selectedUsers = Array.from(document.getElementById('performerSelect').selectedOptions)
+                .map(option => option.value);
+
+            if (selectedUsers.length === 0) {
+                alert('Оберіть хоча б одного користувача.');
+                return;
+            }
+
+            fetch(`/tasks/{{ task.id }}/add_performer/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify({performers: selectedUsers}),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Виконавців додано!');
+                        location.reload();  // Оновлюємо сторінку
+                    } else if (data.create_task_url) {
+                        // Якщо задача завершена
+                        if (confirm('Ця задача завершена. Ви можете створити нову задачу. Перейти до створення нової задачі?')) {
+                            window.location.href = data.create_task_url;
+                        }
+                    } else {
+                        alert(`Помилка: ${data.error}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Помилка:', error);
+                    alert('Щось пішло не так. Спробуйте ще раз.');
+                });
+        });
+
+
+    </script>
+
+{% endblock %}

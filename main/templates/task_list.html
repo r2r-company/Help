@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}Менеджер задач{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <div class="row">
+
+            <!-- Бокова панель із фільтрами -->
+            <div class="col-md-3">
+                <div class="card shadow border-0">
+                    <div class="card-header bg-primary text-white">
+                        <h5><i class="fas fa-filter"></i> Фільтри</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="GET">
+                            <!-- Статуси -->
+                            <div class="mb-4">
+                                <label for="statusFilter" class="form-label">Статус</label>
+                                <select name="status" id="statusFilter" class="form-select" multiple>
+                                    <option value="not_started">Не розпочато</option>
+                                    <option value="in_progress">Виконується</option>
+                                    <option value="completed">Завершено</option>
+                                </select>
+                            </div>
+
+                            <!-- Хто поставив задачу -->
+                            <div class="mb-4">
+                                <label for="assignedByFilter" class="form-label">Автор</label>
+                                <select name="assigned_by" id="assignedByFilter" class="form-select">
+                                    <option value="">Всі</option>
+                                    {% for user in users %}
+                                        <option value="{{ user.id }}">{{ user.username }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Пріоритет -->
+                            <div class="mb-4">
+                                <label for="priorityFilter" class="form-label">Пріоритет</label>
+                                <select name="priority" id="priorityFilter" class="form-select" multiple>
+                                    <option value="basic">Базовий</option>
+                                    <option value="non_urgent">Нетерміновий</option>
+                                    <option value="urgent">Терміновий</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search"></i> Застосувати фільтри
+                            </button>
+                        </form>
+
+                    </div>
+
+                </div>
+                <div class="Task_calc">
+                    <div class="badge badge-warning">
+                        Виконується: {{ in_progress_count }}
+                    </div>
+                    <div class="badge badge-secondary">
+                        Не розпочато: {{ not_started_count }}
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Таблиця зі списком задач -->
+            <div class="col-md-9">
+                <div class="card shadow border-0">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-tasks"></i> Список задач</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if tasks %}
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Назва</th>
+                                        <th>Статус</th>
+                                        <th>Пріоритет</th>
+                                        <th>Заявник</th>
+                                        <th>Дедлайн</th>
+                                        <th>Дії</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for task in tasks %}
+                                        <tr class="
+            {% if task.priority == 'urgent' %}table-danger
+            {% elif task.priority == 'non_urgent' %}table-warning
+            {% endif %}
+        ">
+                                            <td>{{ task.task_number }}</td>
+                                            <td class="task-title">{{ task.title }}</td>
+                                            <td>
+                                                {% if task.status == 'not_started' %}
+                                                    <span class="badge bg-secondary">Не розпочато</span>
+                                                {% elif task.status == 'in_progress' %}
+                                                    <span class="badge bg-warning text-dark">Виконується</span>
+                                                {% elif task.status == 'completed' %}
+                                                    <span class="badge bg-success">Завершено</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ task.get_priority_display }}</td>
+                                            <td>{{ task.assigned_by.username }}</td>
+                                            <td>{{ task.deadline|date:"d.m.Y H:i" }}</td>
+                                            <td>
+                                                <a href="{% url 'task_detail' task.pk %}"
+                                                   class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-eye"></i> Переглянути
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+
+
+                                </table>
+                            </div>
+
+                            <!-- Пагінація -->
+                            <nav aria-label="Pagination" class="mt-4">
+                                <ul class="pagination justify-content-center">
+                                    {% if tasks.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1" aria-label="Перша">
+                                                <span aria-hidden="true">&laquo;</span>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ tasks.previous_page_number }}"
+                                               aria-label="Попередня">
+                                                <span aria-hidden="true">&lt;</span>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+
+                                    {% for num in tasks.paginator.page_range %}
+                                        {% if tasks.number == num %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% elif num > tasks.number|add:-3 and num < tasks.number|add:3 %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    {% if tasks.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ tasks.next_page_number }}"
+                                               aria-label="Наступна">
+                                                <span aria-hidden="true">&gt;</span>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ tasks.paginator.num_pages }}"
+                                               aria-label="Остання">
+                                                <span aria-hidden="true">&raquo;</span>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% else %}
+                            <p class="text-muted text-center mt-3">Немає задач для відображення.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

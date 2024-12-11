@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Увійти</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Фонова стилізація */
+        body {
+            background: url('https://cdn.dribbble.com/users/8156988/screenshots/16260376/media/d72c6c8fe5a5cded14961afbe4590e2d.gif') center center / cover no-repeat;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Arial', sans-serif;
+            color: #fff;
+        }
+
+        /* Ефект "скла" */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 15px;
+            padding: 30px;
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+            color: #333;
+        }
+
+        /* Іконка профілю */
+        .glass-panel img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* Заголовок */
+        .glass-panel h3 {
+            font-size: 1.5rem;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+
+        /* Поля форми */
+        .form-control {
+            background: rgba(255, 255, 255, 0.5);
+            border: none;
+            outline: none;
+            color: #333;
+            padding: 10px 15px;
+            border-radius: 10px;
+        }
+
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.7);
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.5);
+        }
+
+        /* Кнопка входу */
+        .btn-primary {
+            background: rgba(0, 123, 255, 0.9);
+            border: none;
+            padding: 10px;
+            border-radius: 10px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary:hover {
+            background: rgba(0, 123, 255, 1);
+        }
+
+        /* Текст для посилань */
+        .forgot-link {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #ddd;
+        }
+
+        .forgot-link a {
+            color: #00bcd4;
+            text-decoration: none;
+        }
+
+        .forgot-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Декоративна шестерня */
+        .gear {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            top: 10%;
+            left: 10%;
+            animation: spin 6s linear infinite;
+        }
+
+        .gear::before, .gear::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .gear::after {
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Анімація */
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Заблокована кнопка "НІ" */
+        .btn-disabled {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+        .modal-content {
+        color: #000; /* Текст чорний для контрасту */
+    }
+    </style>
+</head>
+<body>
+    <!-- Декоративна шестерня -->
+    <div class="gear"></div>
+
+    <!-- Панель входу -->
+    <div class="glass-panel">
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQuCU36qanHy2V7-rMFLPlLutlDgPpbrrqf6g&s" alt="User Icon">
+        <h3>Авторизація</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <input type="text" id="username" name="username" placeholder="Username" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <input type="password" id="password" name="password" placeholder="Password" class="form-control" required>
+            </div>
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                Невірний логін або пароль.
+            </div>
+            {% endif %}
+            <button type="submit" class="btn btn-primary w-100">Увійти</button>
+            <div class="forgot-link">
+                <small>Забули пароль? <a href="#" data-bs-toggle="modal" data-bs-target="#adminModal">Дзвоніть адміну</a></small>
+            </div>
+        </form>
+    </div>
+
+    <!-- Модальне вікно -->
+    <div class="modal fade" id="adminModal" tabindex="-1" aria-labelledby="adminModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="adminModalLabel">Адмін зайнятий</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Відпочиває на Карибських островах не торбувати!
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Гарного відпочинку</button>
+                    <button type="button" class="btn btn-secondary btn-disabled">Зателефонувати</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
