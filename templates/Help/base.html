@@ -117,6 +117,7 @@
             background-color: #fff3cd !important; /* Світло-жовтий фон */
             color: #856404; /* Темний текст для контрасту */
         }
+
     </style>
 </head>
 <body>
@@ -135,6 +136,9 @@
                         <a class="nav-link" href="{% url 'task_form' %}">Створити задачу</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="{% url 'payment_service_list' %}">Оплата послуг</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{% url 'reports' %}">Звіти</a>
                     </li>
                     <li class="nav-item">
@@ -143,6 +147,53 @@
                 {% endif %}
             </ul>
             <ul class="navbar-nav">
+                <!-- Іконка повідомлень -->
+                {% if user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle position-relative" href="#" id="notificationsDropdown"
+                           role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-bell"></i>
+                            {% if upcoming_payment_count > 0 or overdue_payment_count > 0 %}
+                                <span class="badge bg-danger position-absolute top-0 start-100 translate-middle">
+                    {{ upcoming_payment_count|add:overdue_payment_count }}
+                </span>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationsDropdown">
+                            {% if overdue_payments %}
+                                <li class="dropdown-header text-danger">Протерміновані платежі</li>
+                                {% for payment in overdue_payments %}
+                                    <li>
+                                        <a class="dropdown-item text-danger"
+                                           href="{% url 'payment_service_detail' payment.service.pk %}">
+                                            <strong>{{ payment.service.name }}</strong>: {{ payment.next_payment_date }}
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                            {% endif %}
+                            {% if upcoming_payments %}
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li class="dropdown-header text-success">Майбутні платежі</li>
+                                {% for payment in upcoming_payments %}
+                                    <li>
+                                        <a class="dropdown-item"
+                                           href="{% url 'payment_service_detail' payment.service.pk %}">
+                                            <strong>{{ payment.service.name }}</strong>: {{ payment.next_payment_date }}
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                            {% endif %}
+                            {% if not overdue_payments and not upcoming_payments %}
+                                <li>
+                                    <span class="dropdown-item text-muted">Немає нових повідомлень</span>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </li>
+                {% endif %}
+
                 {% if user.is_authenticated %}
                     <li class="nav-item">
                         <form method="post" action="{% url 'logout' %}" style="display: inline;">

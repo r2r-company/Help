@@ -1,0 +1,61 @@
+{% extends 'Help/base.html' %}
+
+{% block title %}Деталі сервісу{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <div class="card shadow border-0">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5>Деталі сервісу: {{ service.name }}</h5>
+                <a href="{% url 'create_payment' service.id %}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Додати оплату
+                </a>
+            </div>
+            <div class="card-body">
+                <p><strong>Посилання:</strong> <a href="{{ service.link }}" target="_blank">{{ service.link }}</a></p>
+                <p><strong>Логін:</strong> {{ service.login }}</p>
+                <p><strong>Пароль:</strong> {{ service.password }}</p>
+            </div>
+        </div>
+
+        <div class="card shadow border-0 mt-4">
+            <div class="card-header bg-primary text-white">
+                <h5>Оплати</h5>
+            </div>
+            <div class="card-body">
+                {% if payments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Дата поточного платежу</th>
+                                <th>Дата наступного платежу</th>
+                                <th>Сума</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for payment in payments %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ payment.current_payment_date|date:"d.m.Y" }}</td>
+                                    <td>{{ payment.next_payment_date|date:"d.m.Y" }}</td>
+                                    <td title="{{ payment.get_currency_display }}">{{ payment.get_formatted_amount }}</td>
+                                    <td>
+                                        <a href="{% url 'delete_payment' payment.id %}"
+                                           class="btn btn-outline-danger btn-sm">
+                                            <i class="fas fa-trash-alt"></i> Видалити
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center mt-3">Немає оплат для цього сервісу.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

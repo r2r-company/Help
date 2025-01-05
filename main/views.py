@@ -1,15 +1,14 @@
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
-from django.db.models import Q, ExpressionWrapper, F, Count, Avg
+from django.db.models import Q
 from django.forms import DurationField
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 import json
-
 from django.urls import reverse
 from django.utils.dateparse import parse_datetime
 
-from .form import TaskForm
+from .forms import TaskForm
 from .models import Task, TaskPerformer, Message, DeadlineHistory
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.timezone import now
@@ -101,7 +100,7 @@ def task_form(request, pk=None):
     else:
         form = TaskForm(instance=task)
 
-    return render(request, 'task_form.html', {'form': form})
+    return render(request, 'main/task_form.html', {'form': form})
 
 
 
@@ -139,7 +138,7 @@ def task_list(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'task_list.html', {
+    return render(request, 'main/task_list.html', {
         'tasks': page_obj,
         'users': users,
         'in_progress_count': in_progress_count,
@@ -164,7 +163,7 @@ def task_detail(request, pk):
     performers = task.performers.all()
     messages = task.messages.all().order_by('created_at')
 
-    return render(request, 'task_details.html', {
+    return render(request, 'main/task_details.html', {
         'task': task,
         'performers': performers,
         'messages': messages,
@@ -231,14 +230,14 @@ def task_create(request):
         form = TaskForm(request.POST)
         if form.is_valid():
             task = form.save(commit=False)
-            task.assigned_by = request.user
+            task.assigned_by = request.user  # Призначаємо поточного користувача
             task.save()
-            form.save_m2m()  # Для ManyToManyField
-            return redirect('task_list')  # Повернення до списку задач
+            form.save_m2m()  # Зберігаємо ManyToMany зв'язки
+            return redirect('task_list')
     else:
         form = TaskForm()
 
-    return render(request, 'task_form.html', {'form': form})
+    return render(request, 'main/task_form.html', {'form': form})
 
 
 @login_required
@@ -255,7 +254,7 @@ def task_detail(request, pk):
     # Додаємо всіх користувачів
     all_users = User.objects.all()
 
-    return render(request, 'task_details.html', {
+    return render(request, 'main/task_details.html', {
         'task': task,
         'performers': performers,
         'messages': messages,
@@ -263,7 +262,7 @@ def task_detail(request, pk):
     })
 @login_required
 def instructions(request):
-    return render(request, 'instructions.html')
+    return render(request, 'main/instructions.html')
 
 
 @login_required
@@ -317,7 +316,7 @@ def report_page(request):
         'avg_execution_time': avg_execution_time,
         'users': users,
     }
-    return render(request, 'report_page.html', context)
+    return render(request, 'main/report_page.html', context)
 
 
 @login_required
@@ -376,7 +375,7 @@ def report_page(request):
         "avg_execution_time": avg_execution_time,
         "users": users,
     }
-    return render(request, "report_page.html", context)
+    return render(request, "main/report_page.html", context)
 
 from django.http import HttpResponseForbidden
 

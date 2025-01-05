@@ -1,0 +1,57 @@
+{% extends 'Help/base.html' %}
+
+{% block title %}Сервіси{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <div class="card shadow border-0">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-server"></i> Сервіси</h5>
+                <a href="{% url 'create_payment_service' %}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Створити сервіс
+                </a>
+            </div>
+            <div class="card-body">
+                {% if services %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Назва</th>
+                                <th>Посилання</th>
+                                <th>Логін</th>
+                                <th>Пароль</th>
+                                <th>Дії</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for service in services %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ service.name }}</td>
+                                    <td><a href="{{ service.link }}" target="_blank">{{ service.link }}</a></td>
+                                    <td>{{ service.login }}</td>
+                                    <td>{{ service.password }}</td>
+                                    <td>
+                                        <a href="{% url 'payment_service_detail' service.id %}"
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye"></i> Переглянути
+                                        </a>
+                                        <a href="{% url 'payment_service_delete' service.id %}"
+                                           class="btn btn-outline-danger btn-sm">
+                                            <i class="fas fa-trash-alt"></i> Видалити
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center mt-3">Немає сервісів для відображення.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
